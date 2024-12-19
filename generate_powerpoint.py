@@ -11,14 +11,17 @@ import requests
 
 app = Flask(__name__)
 
-# Enable CORS for all origins with explicit configuration
+# Enable CORS for all origins
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Dictionary to store generated files and their IDs
 generated_files = {}
 
-@app.route('/generate_pptx', methods=['POST'])
+@app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
 def generate_pptx():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'OK'}), 200  # Respond to preflight request
+
     try:
         # Create a new presentation BEFORE processing slides
         prs = Presentation()
@@ -62,7 +65,7 @@ def generate_pptx():
 
                 if body_placeholder:
                     text_frame = body_placeholder.text_frame
-                    text_frame.text = slide_data['body']
+                    text_frame.text = slide_data['body']  # Set the body text
                     text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
                     text_frame.vertical_anchor = MSO_ANCHOR.TOP
 
@@ -173,4 +176,3 @@ def download_file(file_id):
 if __name__ == '__main__':
     # Removed app.run() for production
     pass
-
