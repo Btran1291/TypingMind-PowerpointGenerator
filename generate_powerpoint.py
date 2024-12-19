@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_file, url_for
-from flask_cors import CORS
+from flask_cors import CORS  # Import CORS
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
@@ -11,8 +11,8 @@ import requests
 
 app = Flask(__name__)
 
-# Enable CORS for all origins
-CORS(app)
+# Enable CORS for all origins with explicit configuration
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Dictionary to store generated files and their IDs
 generated_files = {}
@@ -62,7 +62,7 @@ def generate_pptx():
 
                 if body_placeholder:
                     text_frame = body_placeholder.text_frame
-                    text_frame.text = slide_data['body']  # Set the body text
+                    text_frame.text = slide_data['body']
                     text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
                     text_frame.vertical_anchor = MSO_ANCHOR.TOP
 
@@ -156,6 +156,7 @@ def generate_pptx():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Download route remains the same as in the previous example
 @app.route('/download/<file_id>')
 def download_file(file_id):
     if file_id in generated_files:
@@ -172,3 +173,4 @@ def download_file(file_id):
 if __name__ == '__main__':
     # Removed app.run() for production
     pass
+
