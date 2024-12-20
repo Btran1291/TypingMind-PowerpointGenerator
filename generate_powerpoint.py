@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file, url_for
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
 from pptx import Presentation
-from pptx.util import Inches, Pt
+from pptx.util import Inches, Pt 
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
@@ -53,6 +53,8 @@ def generate_pptx():
             title_shape = slide.shapes.title
             if title_shape:
                 title_shape.text = slide_data.get('title', 'Untitled Slide')
+                title_font_size = slide_data.get('title_font_size', 18)
+                title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
             # Body Text
             if 'body' in slide_data:
@@ -66,6 +68,8 @@ def generate_pptx():
                 if body_placeholder:
                     text_frame = body_placeholder.text_frame
                     text_frame.text = slide_data['body']  # Set the body text
+                    body_font_size = slide_data.get('body_font_size', 12)
+                    text_frame.paragraphs[0].font.size = Pt(body_font_size)
                     text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
                     text_frame.vertical_anchor = MSO_ANCHOR.TOP
 
@@ -95,10 +99,11 @@ def generate_pptx():
                 cols = len(table_data[0]) if table_data else 0
 
                 # Default positioning
-                left = Inches(1)
-                top = Inches(3)
-                width = Inches(8)
-                height = Inches(2)
+                table_position = slide_data.get('table_position', {})
+                left = Inches(table_position.get('left', 1))
+                top = Inches(table_position.get('top', 3))
+                width = Inches(table_position.get('width', 8))
+                height = Inches(table_position.get('height', 2))
 
                 # Add table
                 table_shape = slide.shapes.add_table(rows, cols, left, top, width, height)
@@ -125,7 +130,11 @@ def generate_pptx():
                         )
 
                     # Default chart positioning
-                    x, y, cx, cy = Inches(1), Inches(3), Inches(6), Inches(4)
+                    chart_position = chart_data.get('chart_position', {})
+                    x = Inches(chart_position.get('left', 1))
+                    y = Inches(chart_position.get('top', 3))
+                    cx = Inches(chart_position.get('width', 6))
+                    cy = Inches(chart_position.get('height', 4))
 
                     # Add chart
                     chart_type = getattr(XL_CHART_TYPE, chart_data.get('type', 'COLUMN_CLUSTERED'))
@@ -138,6 +147,8 @@ def generate_pptx():
                     if chart_data.get('title'):
                         chart.chart_title.has_text_frame = True
                         chart.chart_title.text_frame.text = chart_data['title']
+                        chart_title_font_size = chart_data.get('title_font_size', 14)
+                        chart.chart_title.text_frame.paragraphs[0].font.size = Pt(chart_title_font_size)
 
                 except Exception as e:
                     print(f"Error adding chart: {e}")
@@ -159,7 +170,6 @@ def generate_pptx():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Download route remains the same as in the previous example
 @app.route('/download/<file_id>')
 def download_file(file_id):
     if file_id in generated_files:
