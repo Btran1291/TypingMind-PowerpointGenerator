@@ -31,6 +31,7 @@ markupsafe==2.1.1
     # via
     #   jinja2
     #   werkzeug
+python-pptx
 requests==2.32.3
     # via -r requirements.in
 urllib3==1.26.9
