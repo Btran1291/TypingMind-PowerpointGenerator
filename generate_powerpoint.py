@@ -175,7 +175,7 @@ def generate_pptx():
         # Generate the download link
         download_link = url_for('download_file', file_id=file_id, _external=True)
 
-        return jsonify({'download_link': download_link})
+        return jsonify(f"[Download PowerPoint]({download_link})")
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
