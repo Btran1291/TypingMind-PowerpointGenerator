@@ -7,6 +7,7 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
 import io
 import uuid
+import json
 import requests
 
 app = Flask(__name__)
@@ -23,10 +24,16 @@ def generate_pptx():
         return jsonify({'status': 'OK'}), 200  # Respond to preflight request
 
     try:
-        # Create a new presentation BEFORE processing slides
-        prs = Presentation()
+        # Get the raw request body as a string
+        request_body = request.get_data(as_text=True)
 
-        data = request.get_json()
+        # Parse the request body as JSON
+        try:
+            data = json.loads(request_body)
+        except json.JSONDecodeError as e:
+            return jsonify({'error': f'Invalid JSON in request body: {e}'}), 400
+
+        # Ensure the 'slides' key is present
         if 'slides' not in data:
             return jsonify({'error': 'Invalid input. Must provide slides.'}), 400
 
@@ -35,6 +42,9 @@ def generate_pptx():
             slides = [data['slides']]
         else:
             slides = data['slides']
+
+        # Create a new presentation
+        prs = Presentation()
 
         # Process each slide
         for slide_data in slides:
