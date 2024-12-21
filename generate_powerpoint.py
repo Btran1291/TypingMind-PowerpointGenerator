@@ -77,7 +77,7 @@ def generate_pptx():
             if 'images' in slide_data:
                 for img_data in slide_data['images']:
                     try:
-                        headers = {"User-Agent": "Docx_Generator_bot/1.0 requests/{requests.__version__}"}
+                        headers = {"User-Agent": "Powerpoint_Generator_bot/1.0 requests/{requests.__version__}"}
                         response = requests.get(img_data['url'], headers=headers, stream=True)
                         response.raise_for_status()
                         image_stream = io.BytesIO(response.content)
