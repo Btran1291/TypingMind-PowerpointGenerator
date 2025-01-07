@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file, url_for
 from flask_cors import CORS
 from pptx import Presentation
-from pptx.util import Inches, Pt
+from pptx.util import Inches, Pt 
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
@@ -17,7 +17,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Dictionary to store generated files and their IDs
 generated_files = {}
-
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
 def generate_pptx():
@@ -46,17 +45,6 @@ def generate_pptx():
 
         # Create a new presentation
         prs = Presentation()
-
-        # Add title slide
-        title_slide_data = data.get('title_slide', {})
-        title_slide_layout = prs.slide_layouts[0]
-        title_slide = prs.slides.add_slide(title_slide_layout)
-        title_shape = title_slide.shapes.title
-        if title_shape:
-            title_text = title_slide_data.get('title', 'Presentation Title')
-            title_font_size = title_slide_data.get('title_font_size', 36)
-            title_shape.text = title_text
-            title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
         # Process each slide
         for slide_data in slides:
@@ -192,7 +180,6 @@ def generate_pptx():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/download/<file_id>')
 def download_file(file_id):
     if file_id in generated_files:
@@ -205,7 +192,6 @@ def download_file(file_id):
         )
     else:
         return "File not found", 404
-
 
 if __name__ == '__main__':
     # Removed app.run() for production
