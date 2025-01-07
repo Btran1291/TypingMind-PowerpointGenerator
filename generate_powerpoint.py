@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file, url_for
 from flask_cors import CORS
 from pptx import Presentation
-from pptx.util import Inches, Pt 
+from pptx.util import Inches, Pt
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
@@ -9,6 +9,7 @@ import io
 import uuid
 import json
 import requests
+import re
 
 app = Flask(__name__)
 
@@ -17,6 +18,19 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Dictionary to store generated files and their IDs
 generated_files = {}
+
+
+def slugify(text):
+    """
+    Converts a string into a URL-friendly slug.
+    Removes non-alphanumeric characters, replaces spaces with underscores,
+    and converts to lowercase.
+    """
+    text = text.lower()
+    text = re.sub(r'[^\w\s-]', '', text)  # Remove non-alphanumeric chars
+    text = re.sub(r'[-\s]+', '_', text)  # Replace spaces and hyphens with underscores
+    return text
+
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
 def generate_pptx():
@@ -45,6 +59,17 @@ def generate_pptx():
 
         # Create a new presentation
         prs = Presentation()
+
+        # Add title slide
+        title_slide_data = data.get('title_slide', {})
+        title_slide_layout = prs.slide_layouts[0]
+        title_slide = prs.slides.add_slide(title_slide_layout)
+        title_shape = title_slide.shapes.title
+        if title_shape:
+            title_text = title_slide_data.get('title', 'Presentation Title')
+            title_font_size = title_slide_data.get('title_font_size', 36)
+            title_shape.text = title_text
+            title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
         # Process each slide
         for slide_data in slides:
@@ -172,26 +197,52 @@ def generate_pptx():
         file_id = str(uuid.uuid4())
         generated_files[file_id] = pptx_buffer
 
+        # Generate the filename from the title slide title
+        filename = "generated_presentation"
+        if title_slide_data and 'title' in title_slide_data:
+            filename = slugify(title_slide_data['title'])
+        
+        filename = f"{filename}.pptx"
+
         # Generate the download link
-        download_link = url_for('download_file', file_id=file_id, _external=True)
+        download_link = url_for('download_file', file_id=file_id, _external=True, _scheme='https')
 
         return jsonify({'download_link': f"[Download PowerPoint]({download_link})"})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/download/<file_id>')
 def download_file(file_id):
     if file_id in generated_files:
         pptx_buffer = generated_files[file_id]
+        
+        # Get the filename from the title slide data
+        filename = "generated_presentation.pptx"
+        for key, value in generated_files.items():
+            if key == file_id:
+                # Find the request that generated this file
+                for key2, value2 in request.environ.items():
+                    if key2 == 'werkzeug.request':
+                        try:
+                            request_body = value2.get_data(as_text=True)
+                            data = json.loads(request_body)
+                            title_slide_data = data.get('title_slide', {})
+                            if title_slide_data and 'title' in title_slide_data:
+                                filename = f"{slugify(title_slide_data['title'])}.pptx"
+                        except Exception as e:
+                            print(f"Error getting filename: {e}")
+                            
         return send_file(
             pptx_buffer,
             mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            download_name='generated_presentation.pptx',
+            download_name=filename,
             as_attachment=True
         )
     else:
         return "File not found", 404
+
 
 if __name__ == '__main__':
     # Removed app.run() for production
