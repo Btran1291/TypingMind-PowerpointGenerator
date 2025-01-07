@@ -9,7 +9,6 @@ import io
 import uuid
 import json
 import requests
-import re
 
 app = Flask(__name__)
 
@@ -18,18 +17,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Dictionary to store generated files and their IDs
 generated_files = {}
-
-
-def slugify(text):
-    """
-    Converts a string into a URL-friendly slug.
-    Removes non-alphanumeric characters, replaces spaces with underscores,
-    and converts to lowercase.
-    """
-    text = text.lower()
-    text = re.sub(r'[^\w\s-]', '', text)  # Remove non-alphanumeric chars
-    text = re.sub(r'[-\s]+', '_', text)  # Replace spaces and hyphens with underscores
-    return text
 
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
@@ -197,15 +184,8 @@ def generate_pptx():
         file_id = str(uuid.uuid4())
         generated_files[file_id] = pptx_buffer
 
-        # Generate the filename from the title slide title
-        filename = "generated_presentation"
-        if title_slide_data and 'title' in title_slide_data:
-            filename = slugify(title_slide_data['title'])
-        
-        filename = f"{filename}.pptx"
-
         # Generate the download link
-        download_link = url_for('download_file', file_id=file_id, _external=True, _scheme='https')
+        download_link = url_for('download_file', file_id=file_id, _external=True)
 
         return jsonify({'download_link': f"[Download PowerPoint]({download_link})"})
 
@@ -217,27 +197,10 @@ def generate_pptx():
 def download_file(file_id):
     if file_id in generated_files:
         pptx_buffer = generated_files[file_id]
-        
-        # Get the filename from the title slide data
-        filename = "generated_presentation.pptx"
-        for key, value in generated_files.items():
-            if key == file_id:
-                # Find the request that generated this file
-                for key2, value2 in request.environ.items():
-                    if key2 == 'werkzeug.request':
-                        try:
-                            request_body = value2.get_data(as_text=True)
-                            data = json.loads(request_body)
-                            title_slide_data = data.get('title_slide', {})
-                            if title_slide_data and 'title' in title_slide_data:
-                                filename = f"{slugify(title_slide_data['title'])}.pptx"
-                        except Exception as e:
-                            print(f"Error getting filename: {e}")
-                            
         return send_file(
             pptx_buffer,
             mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            download_name=filename,
+            download_name='generated_presentation.pptx',
             as_attachment=True
         )
     else:
