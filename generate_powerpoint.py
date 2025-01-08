@@ -9,6 +9,7 @@ import io
 import uuid
 import json
 import requests
+import re
 
 app = Flask(__name__)
 
@@ -17,6 +18,38 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Dictionary to store generated files and their IDs
 generated_files = {}
+
+
+def escape_text(text):
+    """Escapes or formats text for PowerPoint."""
+    if not text:
+        return ""
+
+    # Remove bold and italic markdown
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
+
+    # Replace newlines with actual newlines
+    text = text.replace(r'\n', '\n')
+
+    # Replace bullet points
+    text = re.sub(r'^\s*\*\s+', '- ', text, flags=re.MULTILINE)
+
+    return text
+
+
+def format_filename(title):
+    """Formats a title into a filename-compatible string."""
+    if not title:
+        return "generated_presentation"
+
+    # Remove special characters and spaces
+    filename = re.sub(r'[^a-zA-Z0-9_.-]', '', title)
+    # Replace spaces with underscores
+    filename = filename.replace(' ', '_')
+    # Limit length to prevent issues
+    filename = filename[:200]
+    return filename
 
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
@@ -54,7 +87,7 @@ def generate_pptx():
             # Add title
             title_shape = title_slide.shapes.title
             if title_shape:
-                title_text = title_slide_data.get('title', 'Presentation Title')
+                title_text = escape_text(title_slide_data.get('title', 'Presentation Title'))
                 title_font_size = title_slide_data.get('title_font_size', 54)
                 title_shape.text = title_text
                 title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
@@ -62,7 +95,7 @@ def generate_pptx():
             # Add subtitle
             if 'subtitle' in title_slide_data:
                 subtitle_placeholder = title_slide.placeholders[1]
-                subtitle_text = title_slide_data.get('subtitle', '')
+                subtitle_text = escape_text(title_slide_data.get('subtitle', ''))
                 subtitle_font_size = title_slide_data.get('subtitle_font_size', 32)
                 text_frame = subtitle_placeholder.text_frame
                 text_frame.text = subtitle_text
@@ -86,7 +119,7 @@ def generate_pptx():
             # Title
             title_shape = slide.shapes.title
             if title_shape:
-                title_shape.text = slide_data.get('title', 'Untitled Slide')
+                title_shape.text = escape_text(slide_data.get('title', 'Untitled Slide'))
                 title_font_size = slide_data.get('title_font_size', 36)
                 title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
@@ -101,7 +134,7 @@ def generate_pptx():
 
                 if body_placeholder:
                     text_frame = body_placeholder.text_frame
-                    text_frame.text = slide_data['body']  # Set the body text
+                    text_frame.text = escape_text(slide_data['body'])  # Set the body text
                     body_font_size = slide_data.get('body_font_size', 24)
 
                     # Iterate through all paragraphs in the text frame and set font size
@@ -200,6 +233,15 @@ def generate_pptx():
         file_id = str(uuid.uuid4())
         generated_files[file_id] = pptx_buffer
 
+        # Get the title from the title slide
+        if 'title_slide' in slides_data and 'title' in slides_data['title_slide']:
+            title_slide_title = slides_data['title_slide']['title']
+        else:
+            title_slide_title = "generated_presentation"
+
+        # Format the filename
+        filename = format_filename(title_slide_title) + ".pptx"
+
         # Generate the download link
         download_link = url_for('download_file', file_id=file_id, _external=True)
 
@@ -219,10 +261,18 @@ def generate_pptx():
 def download_file(file_id):
     if file_id in generated_files:
         pptx_buffer = generated_files[file_id]
+        # Get the filename from the title slide
+        for slides_data in generated_files.values():
+            if 'title_slide' in slides_data and 'title' in slides_data['title_slide']:
+                title_slide_title = slides_data['title_slide']['title']
+            else:
+                title_slide_title = "generated_presentation"
+            filename = format_filename(title_slide_title) + ".pptx"
+            break
         return send_file(
             pptx_buffer,
             mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            download_name='generated_presentation.pptx',
+            download_name=filename,
             as_attachment=True
         )
     else:
