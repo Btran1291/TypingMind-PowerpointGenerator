@@ -21,21 +21,36 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 generated_files = {}
 
 
-import re
-import html
-import unicodedata
-
 def escape_text(text):
     """Escapes or formats text for PowerPoint."""
     if not text:
         return ""
 
-    # Remove all markdown formatting
-    text = re.sub(r'([*_~`#>\-\+\!$$$$$$$$\d\.]+)', r'', text)
+    # Remove bold and italic markdown
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.*?)\*', r'\1', text)
 
     # Remove escaped backslashes before newlines and hyphens
     text = re.sub(r'\\\\n', r'\n', text)
     text = re.sub(r'\\\\-', r'-', text)
+
+    # Remove headers
+    text = re.sub(r'^\s*#+\s*(.*)$', r'\1', text, flags=re.MULTILINE)
+
+    # Remove links
+    text = re.sub(r'$$(.*?)$$$$(.*?)$$', r'\1', text)
+
+    # Remove blockquotes
+    text = re.sub(r'^\s*>\s*(.*)$', r'\1', text, flags=re.MULTILINE)
+
+    # Remove code blocks
+    text = re.sub(r'```(.*?)```', '', text, flags=re.DOTALL)
+
+    # Replace ordered lists
+    text = re.sub(r'^\s*\d+\.\s+(.*)$', r'- \1', text, flags=re.MULTILINE)
+
+    # Replace bullet points
+    text = re.sub(r'^\s*\*\s+', '- ', text, flags=re.MULTILINE)
 
     # Handle escaped tabs
     text = text.replace(r'\t', '\t')
@@ -48,9 +63,6 @@ def escape_text(text):
 
     # Reduce multiple spaces to single spaces, but not newlines
     text = re.sub(r'(?<!\n)\s+', ' ', text)
-
-    # Remove control characters
-    text = ''.join(ch for ch in text if unicodedata.category(ch)[0] != 'C')
 
     # Remove leading/trailing whitespace
     text = text.strip()
