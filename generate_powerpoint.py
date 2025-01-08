@@ -34,44 +34,16 @@ def escape_text(text):
     text = re.sub(r'\\\\n', r'\n', text)
     text = re.sub(r'\\\\-', r'-', text)
 
-    # Remove headers
-    text = re.sub(r'^\s*#+\s*(.*)$', r'\1', text, flags=re.MULTILINE)
-
-    # Remove links
-    text = re.sub(r'$$(.*?)$$$$(.*?)$$', r'\1', text)
-
-    # Remove blockquotes
-    text = re.sub(r'^\s*>\s*(.*)$', r'\1', text, flags=re.MULTILINE)
-
-    # Remove code blocks
-    text = re.sub(r'```(.*?)```', '', text, flags=re.DOTALL)
-
-    # Replace ordered lists
-    text = re.sub(r'^\s*\d+\.\s+(.*)$', r'- \1', text, flags=re.MULTILINE)
+    # Replace newlines with actual newlines
+    text = text.replace(r'\n', '\n')
 
     # Replace bullet points
     text = re.sub(r'^\s*\*\s+', '- ', text, flags=re.MULTILINE)
 
-    # Handle escaped tabs
-    text = text.replace(r'\t', '\t')
-
-    # Handle escaped unicode
-    text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), text)
-
     # Handle escaped single quotes and other HTML entities
     text = html.unescape(text)
-    
-    # Convert literal newline characters to actual newlines
-    text = text.replace('\n', '\n')
-
-    # Reduce multiple spaces to single spaces
-    text = re.sub(r'\s+', ' ', text)
-
-    # Remove leading/trailing whitespace
-    text = text.strip()
 
     return text
-
 
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
