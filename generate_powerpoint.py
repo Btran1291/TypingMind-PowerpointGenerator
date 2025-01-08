@@ -55,7 +55,7 @@ def generate_pptx():
             title_shape = title_slide.shapes.title
             if title_shape:
                 title_text = title_slide_data.get('title', 'Presentation Title')
-                title_font_size = title_slide_data.get('title_font_size', 36)
+                title_font_size = title_slide_data.get('title_font_size', 54)
                 title_shape.text = title_text
                 title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
@@ -63,7 +63,7 @@ def generate_pptx():
             if 'subtitle' in title_slide_data:
                 subtitle_placeholder = title_slide.placeholders[1]
                 subtitle_text = title_slide_data.get('subtitle', '')
-                subtitle_font_size = title_slide_data.get('subtitle_font_size', 18)
+                subtitle_font_size = title_slide_data.get('subtitle_font_size', 32)
                 text_frame = subtitle_placeholder.text_frame
                 text_frame.text = subtitle_text
                 text_frame.paragraphs[0].font.size = Pt(subtitle_font_size)
@@ -87,7 +87,7 @@ def generate_pptx():
             title_shape = slide.shapes.title
             if title_shape:
                 title_shape.text = slide_data.get('title', 'Untitled Slide')
-                title_font_size = slide_data.get('title_font_size', 18)
+                title_font_size = slide_data.get('title_font_size', 36)
                 title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
             # Body Text
@@ -102,7 +102,7 @@ def generate_pptx():
                 if body_placeholder:
                     text_frame = body_placeholder.text_frame
                     text_frame.text = slide_data['body']  # Set the body text
-                    body_font_size = slide_data.get('body_font_size', 12)
+                    body_font_size = slide_data.get('body_font_size', 24)
 
                     # Iterate through all paragraphs in the text frame and set font size
                     for paragraph in text_frame.paragraphs:
@@ -185,7 +185,7 @@ def generate_pptx():
                     if chart_data.get('title'):
                         chart.chart_title.has_text_frame = True
                         chart.chart_title.text_frame.text = chart_data['title']
-                        chart_title_font_size = chart_data.get('title_font_size', 14)
+                        chart_title_font_size = chart_data.get('title_font_size', 18)
                         chart.chart_title.text_frame.paragraphs[0].font.size = Pt(chart_title_font_size)
 
                 except Exception as e:
