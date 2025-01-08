@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_file, url_for
 from flask_cors import CORS
 from pptx import Presentation
-from pptx.util import Inches, Pt
+from pptx.util import Inches, Pt 
 from pptx.enum.text import MSO_ANCHOR, MSO_AUTO_SIZE
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.chart.data import CategoryChartData
@@ -18,15 +18,16 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # Dictionary to store generated files and their IDs
 generated_files = {}
 
-
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
 def generate_pptx():
     if request.method == 'OPTIONS':
-        return jsonify({'status': 'OK'}), 200
+        return jsonify({'status': 'OK'}), 200  # Respond to preflight request
 
     try:
-        # Get and parse request body
+        # Get the raw request body as a string
         request_body = request.get_data(as_text=True)
+
+        # Parse the request body as JSON
         try:
             data = json.loads(request_body)
         except json.JSONDecodeError as e:
@@ -36,42 +37,17 @@ def generate_pptx():
         if 'slides' not in data:
             return jsonify({'error': 'Invalid input. Must provide slides.'}), 400
 
-        slides_data = data['slides']
+        # If slides is a dictionary (single slide), convert to list
+        if isinstance(data['slides'], dict):
+            slides = [data['slides']]
+        else:
+            slides = data['slides']
 
-        # Ensure content_slides exists
-        if 'content_slides' not in slides_data:
-            return jsonify({'error': 'Invalid input. Must provide content_slides.'}), 400
-
-        # Create presentation
+        # Create a new presentation
         prs = Presentation()
 
-        # Process title slide if present
-        if 'title_slide' in slides_data:
-            title_slide_data = slides_data['title_slide']
-            title_slide_layout = prs.slide_layouts[0]
-            title_slide = prs.slides.add_slide(title_slide_layout)
-
-            # Add title
-            title_shape = title_slide.shapes.title
-            if title_shape:
-                title_text = title_slide_data.get('title', 'Presentation Title')
-                title_font_size = title_slide_data.get('title_font_size', 54)
-                title_shape.text = title_text
-                title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
-
-            # Add subtitle
-            if 'subtitle' in title_slide_data:
-                subtitle_placeholder = title_slide.placeholders[1]
-                subtitle_text = title_slide_data.get('subtitle', '')
-                subtitle_font_size = title_slide_data.get('subtitle_font_size', 32)
-                text_frame = subtitle_placeholder.text_frame
-                text_frame.text = subtitle_text
-                text_frame.paragraphs[0].font.size = Pt(subtitle_font_size)
-                text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
-                text_frame.vertical_anchor = MSO_ANCHOR.TOP
-
-        # Process content slides
-        for slide_data in slides_data['content_slides']:
+        # Process each slide
+        for slide_data in slides:
             # Choose slide layout based on content
             if 'chart_data' in slide_data:
                 slide_layout = prs.slide_layouts[5]  # Layout with content
@@ -87,7 +63,7 @@ def generate_pptx():
             title_shape = slide.shapes.title
             if title_shape:
                 title_shape.text = slide_data.get('title', 'Untitled Slide')
-                title_font_size = slide_data.get('title_font_size', 36)
+                title_font_size = slide_data.get('title_font_size', 18)
                 title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
             # Body Text
@@ -102,12 +78,8 @@ def generate_pptx():
                 if body_placeholder:
                     text_frame = body_placeholder.text_frame
                     text_frame.text = slide_data['body']  # Set the body text
-                    body_font_size = slide_data.get('body_font_size', 24)
-
-                    # Iterate through all paragraphs in the text frame and set font size
-                    for paragraph in text_frame.paragraphs:
-                        paragraph.font.size = Pt(body_font_size)
-
+                    body_font_size = slide_data.get('body_font_size', 12)
+                    text_frame.paragraphs[0].font.size = Pt(body_font_size)
                     text_frame.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
                     text_frame.vertical_anchor = MSO_ANCHOR.TOP
 
@@ -185,7 +157,7 @@ def generate_pptx():
                     if chart_data.get('title'):
                         chart.chart_title.has_text_frame = True
                         chart.chart_title.text_frame.text = chart_data['title']
-                        chart_title_font_size = chart_data.get('title_font_size', 18)
+                        chart_title_font_size = chart_data.get('title_font_size', 14)
                         chart.chart_title.text_frame.paragraphs[0].font.size = Pt(chart_title_font_size)
 
                 except Exception as e:
@@ -208,7 +180,6 @@ def generate_pptx():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/download/<file_id>')
 def download_file(file_id):
     if file_id in generated_files:
@@ -221,7 +192,6 @@ def download_file(file_id):
         )
     else:
         return "File not found", 404
-
 
 if __name__ == '__main__':
     # Removed app.run() for production
