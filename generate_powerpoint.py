@@ -38,20 +38,6 @@ def escape_text(text):
     return text
 
 
-def format_filename(title):
-    """Formats a title into a filename-compatible string."""
-    if not title:
-        return "generated_presentation"
-
-    # Remove special characters and spaces
-    filename = re.sub(r'[^a-zA-Z0-9_.-]', '', title)
-    # Replace spaces with underscores
-    filename = filename.replace(' ', '_')
-    # Limit length to prevent issues
-    filename = filename[:200]
-    return filename
-
-
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
 def generate_pptx():
     if request.method == 'OPTIONS':
@@ -233,15 +219,6 @@ def generate_pptx():
         file_id = str(uuid.uuid4())
         generated_files[file_id] = pptx_buffer
 
-        # Get the title from the title slide
-        if 'title_slide' in slides_data and 'title' in slides_data['title_slide']:
-            title_slide_title = slides_data['title_slide']['title']
-        else:
-            title_slide_title = "generated_presentation"
-
-        # Format the filename
-        filename = format_filename(title_slide_title) + ".pptx"
-
         # Generate the download link
         download_link = url_for('download_file', file_id=file_id, _external=True)
 
@@ -261,18 +238,10 @@ def generate_pptx():
 def download_file(file_id):
     if file_id in generated_files:
         pptx_buffer = generated_files[file_id]
-        # Get the filename from the title slide
-        for slides_data in generated_files.values():
-            if 'title_slide' in slides_data and 'title' in slides_data['title_slide']:
-                title_slide_title = slides_data['title_slide']['title']
-            else:
-                title_slide_title = "generated_presentation"
-            filename = format_filename(title_slide_title) + ".pptx"
-            break
         return send_file(
             pptx_buffer,
             mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            download_name=filename,
+            download_name='generated_presentation.pptx',
             as_attachment=True
         )
     else:
