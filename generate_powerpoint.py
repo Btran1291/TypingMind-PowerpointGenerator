@@ -10,6 +10,7 @@ import uuid
 import json
 import requests
 import re
+import html
 
 app = Flask(__name__)
 
@@ -34,6 +35,9 @@ def escape_text(text):
 
     # Replace bullet points
     text = re.sub(r'^\s*\*\s+', '- ', text, flags=re.MULTILINE)
+
+    # Handle escaped single quotes and other HTML entities
+    text = html.unescape(text)
 
     return text
 
