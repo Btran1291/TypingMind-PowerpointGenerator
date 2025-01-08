@@ -21,29 +21,42 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 generated_files = {}
 
 
+import re
+import html
+import unicodedata
+
 def escape_text(text):
     """Escapes or formats text for PowerPoint."""
     if not text:
         return ""
 
-    # Remove bold and italic markdown
-    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
-    text = re.sub(r'\*(.*?)\*', r'\1', text)
+    # Remove all markdown formatting
+    text = re.sub(r'([*_~`#>\-\+\!$$$$$$$$\d\.]+)', r'', text)
 
     # Remove escaped backslashes before newlines and hyphens
     text = re.sub(r'\\\\n', r'\n', text)
     text = re.sub(r'\\\\-', r'-', text)
 
-    # Replace newlines with actual newlines
-    text = text.replace(r'\n', '\n')
+    # Handle escaped tabs
+    text = text.replace(r'\t', '\t')
 
-    # Replace bullet points
-    text = re.sub(r'^\s*\*\s+', '- ', text, flags=re.MULTILINE)
+    # Handle escaped unicode
+    text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), text)
 
     # Handle escaped single quotes and other HTML entities
     text = html.unescape(text)
 
+    # Reduce multiple spaces to single spaces, but not newlines
+    text = re.sub(r'(?<!\n)\s+', ' ', text)
+
+    # Remove control characters
+    text = ''.join(ch for ch in text if unicodedata.category(ch)[0] != 'C')
+
+    # Remove leading/trailing whitespace
+    text = text.strip()
+
     return text
+
 
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
