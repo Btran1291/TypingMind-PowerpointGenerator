@@ -60,6 +60,9 @@ def escape_text(text):
 
     # Handle escaped single quotes and other HTML entities
     text = html.unescape(text)
+    
+    # Convert literal newline characters to actual newlines
+    text = text.replace('\n', '\n')
 
     # Reduce multiple spaces to single spaces
     text = re.sub(r'\s+', ' ', text)
@@ -68,6 +71,7 @@ def escape_text(text):
     text = text.strip()
 
     return text
+
 
 
 @app.route('/generate_pptx', methods=['POST', 'OPTIONS'])
