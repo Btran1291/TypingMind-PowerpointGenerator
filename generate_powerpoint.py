@@ -60,13 +60,8 @@ def generate_pptx():
                 title_shape.text_frame.paragraphs[0].font.size = Pt(title_font_size)
 
             # Add subtitle
-            subtitle_placeholder = None
-            for shape in title_slide.placeholders:
-                if shape.is_placeholder and shape.placeholder_format.type == 13:
-                    subtitle_placeholder = shape
-                    break
-
-            if subtitle_placeholder and 'subtitle' in title_slide_data:
+            if 'subtitle' in title_slide_data:
+                subtitle_placeholder = title_slide.placeholders[1]
                 subtitle_text = title_slide_data.get('subtitle', '')
                 subtitle_font_size = title_slide_data.get('subtitle_font_size', 18)
                 text_frame = subtitle_placeholder.text_frame
@@ -204,7 +199,7 @@ def generate_pptx():
         # Generate the download link
         download_link = url_for('download_file', file_id=file_id, _external=True)
 
-        return jsonify({'download_link': f"[Download PowerPoint]({download_link})"})
+        return jsonify({'download_link': f"[Download PowerPoint]({download_link})'})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
