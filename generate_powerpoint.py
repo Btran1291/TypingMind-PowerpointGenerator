@@ -49,9 +49,6 @@ def escape_text(text):
     # Replace ordered lists
     text = re.sub(r'^\s*\d+\.\s+(.*)$', r'- \1', text, flags=re.MULTILINE)
 
-    # Replace newlines with actual newlines
-    text = text.replace(r'\n', '\n')
-
     # Replace bullet points
     text = re.sub(r'^\s*\*\s+', '- ', text, flags=re.MULTILINE)
 
